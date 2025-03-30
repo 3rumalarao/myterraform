@@ -1,0 +1,50 @@
+aws_project/
+├── main.tf
+├── variables.tf
+├── outputs.tf
+├── terraform.tfvars
+└── modules
+    ├── vpc
+    │   ├── main.tf
+    │   ├── variables.tf
+    │   └── outputs.tf
+    ├── nacl
+    │   ├── main.tf
+    │   ├── variables.tf
+    │   └── outputs.tf
+    ├── security
+    │   ├── main.tf
+    │   ├── variables.tf
+    │   └── outputs.tf
+    ├── app_server
+    │   ├── main.tf
+    │   ├── variables.tf
+    │   └── outputs.tf
+    ├── db
+    │   ├── main.tf
+    │   ├── variables.tf
+    │   └── outputs.tf
+    ├── web_server
+    │   ├── main.tf
+    │   ├── variables.tf
+    │   └── outputs.tf
+    ├── public_server
+    │   ├── main.tf
+    │   ├── variables.tf
+    │   └── outputs.tf
+    ├── alb
+    │   ├── main.tf
+    │   ├── variables.tf
+    │   └── outputs.tf
+    ├── efs
+    │   ├── main.tf
+    │   ├── variables.tf
+    │   └── outputs.tf
+    ├── rds
+    │   ├── main.tf
+    │   ├── variables.tf
+    │   └── outputs.tf
+    └── backup
+        ├── main.tf
+        ├── variables.tf
+        └── outputs.tf
