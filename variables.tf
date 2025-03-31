@@ -62,6 +62,10 @@ variable "tags" {
   default     = {}
 }
 
+###############################
+# Security Group Ingress Rules
+###############################
+
 variable "web_ingress_rules" {
   description = "Ingress rules for the web security group"
   type = list(object({
@@ -148,30 +152,48 @@ variable "efs_ingress_rules" {
   ]
 }
 
+###############################
+# Application Server Variables
+###############################
+
 variable "app_instance_count" {
   description = "Number of application instances"
   type        = number
   default     = 2
 }
 
-variable "app_ami" {
-  description = "AMI for application servers"
-  type        = string
+variable "app_ami_list" {
+  description = "List of AMI IDs for application servers"
+  type        = list(string)
 }
 
-variable "app_instance_type" {
-  description = "Instance type for application servers"
-  type        = string
+variable "app_instance_types" {
+  description = "List of instance types for application servers"
+  type        = list(string)
 }
+
+variable "app_instance_names" {
+  description = "List of instance names for application servers"
+  type        = list(string)
+}
+
+variable "app_sg_ids" {
+  description = "List (of lists) of security group IDs for each app instance"
+  type        = list(list(string))
+}
+
+###############################
+# Database Instance Variables
+###############################
 
 variable "mysql_ami" {
   description = "AMI for MySQL instance"
   type        = string
 }
 
-variable "mysql_instance_type" {
-  description = "Instance type for MySQL instance"
-  type        = string
+variable "mysql_instance_type_list" {
+  description = "List of instance types for MySQL (if more than one)"
+  type        = list(string)
 }
 
 variable "postgres_ami" {
@@ -184,21 +206,49 @@ variable "postgres_instance_type" {
   type        = string
 }
 
+variable "mysql_sg_ids" {
+  description = "List of security group IDs for the MySQL instance"
+  type        = list(string)
+}
+
+variable "postgres_sg_ids" {
+  description = "List of security group IDs for the PostgreSQL instance"
+  type        = list(string)
+}
+
+###############################
+# Web Server Variables
+###############################
+
 variable "web_instance_count" {
   description = "Number of web server instances"
   type        = number
   default     = 1
 }
 
-variable "web_ami" {
-  description = "AMI for web servers"
-  type        = string
+variable "web_ami_list" {
+  description = "List of AMI IDs for web servers"
+  type        = list(string)
 }
 
-variable "web_instance_type" {
-  description = "Instance type for web servers"
-  type        = string
+variable "web_instance_types" {
+  description = "List of instance types for web servers"
+  type        = list(string)
 }
+
+variable "web_instance_names" {
+  description = "List of instance names for web servers"
+  type        = list(string)
+}
+
+variable "web_sg_ids" {
+  description = "List (of lists) of security group IDs for each web instance"
+  type        = list(list(string))
+}
+
+###############################
+# Public Server Variables
+###############################
 
 variable "public_instance_count" {
   description = "Number of public server instances"
@@ -206,15 +256,29 @@ variable "public_instance_count" {
   default     = 2
 }
 
-variable "public_ami" {
-  description = "AMI for public servers"
-  type        = string
+variable "public_ami_list" {
+  description = "List of AMI IDs for public servers"
+  type        = list(string)
 }
 
-variable "public_instance_type" {
-  description = "Instance type for public servers"
-  type        = string
+variable "public_instance_types" {
+  description = "List of instance types for public servers"
+  type        = list(string)
 }
+
+variable "public_instance_names" {
+  description = "List of instance names for public servers"
+  type        = list(string)
+}
+
+variable "public_sg_ids" {
+  description = "List (of lists) of security group IDs for each public instance"
+  type        = list(list(string))
+}
+
+###############################
+# ALB Variables
+###############################
 
 variable "alb_target_port" {
   description = "ALB target group port"
@@ -246,10 +310,18 @@ variable "alb_health_check_path" {
   default     = "/"
 }
 
+###############################
+# EFS Variables
+###############################
+
 variable "efs_creation_token" {
   description = "Creation token for EFS"
   type        = string
 }
+
+###############################
+# RDS Variables
+###############################
 
 variable "mysql_engine_version" {
   description = "MySQL engine version"
@@ -283,6 +355,10 @@ variable "mysql_password" {
   type        = string
   sensitive   = true
 }
+
+###############################
+# Backup Variables
+###############################
 
 variable "backup_schedule" {
   description = "Cron schedule for backups"
