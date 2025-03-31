@@ -1,139 +1,109 @@
 terraform {
+  required_version = ">= 1.0"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 4.0"
+      version = ">= 3.0"
     }
   }
-  required_version = ">= 0.14"
 }
 
 provider "aws" {
-  region = var.aws_region
+  region = var.region
 }
 
 module "vpc" {
-  source             = "./modules/vpc"
-  vpc_cidr           = var.vpc_cidr
-  vpc_name           = var.vpc_name
-  public_subnets     = var.public_subnets
-  private_subnets    = var.private_subnets
-  public_azs         = var.public_azs
-  private_azs        = var.private_azs
-  enable_nat_gateway = var.enable_nat_gateway
-  tags               = var.tags
+  source           = "./modules/vpc"
+  vpc_cidr         = var.vpc_cidr
+  public_subnets   = var.public_subnets
+  private_subnets  = var.private_subnets
+  azs              = var.azs
+  enable_flow_logs = var.enable_vpc_flow_logs
+  dhcp_options     = var.dynamic_dhcp_options
+  common_tags      = var.common_tags
 }
 
-module "nacl" {
-  source       = "./modules/nacl"
-  vpc_id       = module.vpc.vpc_id
-  allowed_cidr = var.allowed_cidr
-  tags         = var.tags
+module "ec2_private" {
+  source           = "./modules/ec2"
+  for_each         = var.private_servers
+  instance_config  = each.value
+  instance_count   = 1
+  subnet_ids       = module.vpc.private_subnet_ids
+  iam_role         = var.iam_role
+  assign_public_ip = false
+  common_tags      = var.common_tags
 }
 
-module "security" {
-  source            = "./modules/security"
-  vpc_id            = module.vpc.vpc_id
-  name_prefix       = var.name_prefix
-  web_ingress_rules = var.web_ingress_rules
-  app_ingress_rules = var.app_ingress_rules
-  db_ingress_rules  = var.db_ingress_rules
-  efs_ingress_rules = var.efs_ingress_rules
-  tags              = var.tags
+module "ec2_applications" {
+  source           = "./modules/ec2"
+  for_each         = var.applications
+  instance_config  = each.value
+  instance_count   = 2    # One per AZ
+  subnet_ids       = module.vpc.private_subnet_ids
+  iam_role         = var.iam_role
+  assign_public_ip = false
+  common_tags      = var.common_tags
 }
 
-module "app_server" {
-  source              = "./modules/app_server"
-  app_instance_count  = var.app_instance_count
-  app_ami_list        = var.app_ami_list
-  app_instance_types  = var.app_instance_types
-  app_instance_names  = var.app_instance_names
-  app_sg_ids          = var.app_sg_ids
-  private_subnet_ids  = module.vpc.private_subnet_ids
-  name_prefix         = var.name_prefix
-  tags                = var.tags
-}
-
-module "db" {
-  source                   = "./modules/db"
-  mysql_ami                = var.mysql_ami
-  mysql_instance_type_list = var.mysql_instance_type_list
-  postgres_ami             = var.postgres_ami
-  postgres_instance_type   = var.postgres_instance_type
-  mysql_sg_ids             = var.mysql_sg_ids
-  postgres_sg_ids          = var.postgres_sg_ids
-  private_subnet_ids       = module.vpc.private_subnet_ids
-  name_prefix              = var.name_prefix
-  tags                     = var.tags
-}
-
-module "web_server" {
-  source              = "./modules/web_server"
-  web_instance_count  = var.web_instance_count
-  web_ami_list        = var.web_ami_list
-  web_instance_types  = var.web_instance_types
-  web_instance_names  = var.web_instance_names
-  web_sg_ids          = var.web_sg_ids
-  private_subnet_ids  = module.vpc.private_subnet_ids
-  name_prefix         = var.name_prefix
-  tags                = var.tags
-}
-
-module "public_server" {
-  source                 = "./modules/public_server"
-  public_instance_count  = var.public_instance_count
-  public_ami_list        = var.public_ami_list
-  public_instance_types  = var.public_instance_types
-  public_instance_names  = var.public_instance_names
-  public_sg_ids          = var.public_sg_ids
-  public_subnet_ids      = module.vpc.public_subnet_ids
-  name_prefix            = var.name_prefix
-  tags                   = var.tags
+module "ec2_public" {
+  source           = "./modules/ec2"
+  for_each         = var.public_instances
+  instance_config  = each.value
+  instance_count   = 1
+  subnet_ids       = module.vpc.public_subnet_ids
+  iam_role         = var.iam_role
+  assign_public_ip = true
+  common_tags      = var.common_tags
 }
 
 module "alb" {
-  source                = "./modules/alb"
-  name_prefix           = var.name_prefix
-  public_subnet_ids     = module.vpc.public_subnet_ids
-  vpc_id                = module.vpc.vpc_id
-  alb_sg_id             = module.security.web_sg_id
-  alb_target_port       = var.alb_target_port
-  alb_target_protocol   = var.alb_target_protocol
-  alb_listener_port     = var.alb_listener_port
-  alb_listener_protocol = var.alb_listener_protocol
-  alb_health_check_path = var.alb_health_check_path
-  tags                  = var.tags
+  source         = "./modules/alb"
+  for_each       = var.applications
+  app_name       = each.key
+  domain_name    = each.value.domain_name
+  subnet_ids     = module.vpc.public_subnet_ids
+  vpc_id         = module.vpc.vpc_id
+  security_groups = each.value.security_groups
+  route53_zone_id = var.route53_zone_id
+  common_tags    = var.common_tags
 }
 
 module "efs" {
   source             = "./modules/efs"
-  creation_token     = var.efs_creation_token
+  vpc_id             = module.vpc.vpc_id
   private_subnet_ids = module.vpc.private_subnet_ids
-  efs_sg_id          = module.security.efs_sg_id
-  name_prefix        = var.name_prefix
-  tags               = var.tags
+  performance_mode   = var.efs_performance_mode
+  encrypted          = var.efs_encrypted
+  mount_points       = var.efs_mount_points
+  security_groups    = var.efs_security_groups
+  common_tags        = var.common_tags
 }
 
 module "rds" {
-  source                  = "./modules/rds"
-  environment             = var.environment
-  name_prefix             = var.name_prefix
-  mysql_engine_version    = var.mysql_engine_version
-  mysql_instance_class    = var.mysql_instance_class
-  mysql_allocated_storage = var.mysql_allocated_storage
-  mysql_storage_type      = var.mysql_storage_type
-  mysql_username          = var.mysql_username
-  mysql_password          = var.mysql_password
-  private_subnet_ids      = module.vpc.private_subnet_ids
-  db_sg_id                = module.security.db_sg_id
-  tags                    = var.tags
+  source              = "./modules/rds"
+  create_rds          = var.create_rds
+  db_subnet_ids       = module.vpc.private_subnet_ids
+  security_group_ids  = var.rds_security_groups
+  engine              = "mysql"
+  engine_version      = var.rds_engine_version
+  instance_class      = var.rds_instance_class
+  allocated_storage   = var.rds_allocated_storage
+  username            = var.rds_username
+  password            = var.rds_password
+  db_name             = var.rds_db_name
+  multi_az            = var.rds_multi_az
+  common_tags         = var.common_tags
 }
 
 module "backup" {
-  source                = "./modules/backup"
-  name_prefix           = var.name_prefix
-  backup_schedule       = var.backup_schedule
-  backup_retention_days = var.backup_retention_days
-  backup_role_arn       = var.backup_role_arn
-  tags                  = var.tags
+  source            = "./modules/backup"
+  create_snapshots  = var.create_snapshots
+  instance_ids      = concat(
+    flatten([for k, v in module.ec2_private.instance_ids : v]),
+    flatten([for k, v in module.ec2_applications.instance_ids : v]),
+    flatten([for k, v in module.ec2_public.instance_ids : v])
+  )
+  retention_days    = var.snapshot_retention_days
+  backup_vault_name = var.backup_vault_name
+  backup_role_arn   = var.backup_role_arn
 }
