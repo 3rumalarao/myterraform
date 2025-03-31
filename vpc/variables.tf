@@ -1,26 +1,30 @@
 variable "vpc_cidr" {
-  type = string 
+  type = string
 }
-variable "vpc_name" {
-  type = string 
-}
+
 variable "public_subnets" {
-  type = list(string) 
+  type = list(string)
 }
+
 variable "private_subnets" {
-  type = list(string) 
+  type = list(string)
 }
-variable "public_azs" {
-  type = list(string) 
+
+variable "azs" {
+  type = list(string)
 }
-variable "private_azs" {
-  type = list(string) 
+
+variable "enable_flow_logs" {
+  type = bool
 }
-variable "enable_nat_gateway" {
-  type = bool 
-  default = true 
+
+variable "dhcp_options" {
+  type = object({
+    domain_name         = string,
+    domain_name_servers = list(string)
+  })
 }
-variable "tags" {
-  type = map(string) 
-  default = {} 
+
+variable "common_tags" {
+  type = map(string)
 }
