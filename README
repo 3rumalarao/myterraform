@@ -1,8 +1,8 @@
 aws_project/
-├── main.tf
-├── variables.tf
-├── outputs.tf
-├── terraform.tfvars
+├── main.tf  - changed
+├── variables.tf - changed
+├── outputs.tf  - changed
+├── terraform.tfvars  - changed
 └── modules
     ├── vpc
     │   ├── main.tf
@@ -17,20 +17,20 @@ aws_project/
     │   ├── variables.tf
     │   └── outputs.tf
     ├── app_server
-    │   ├── main.tf
-    │   ├── variables.tf
+    │   ├── main.tf   - changed
+    │   ├── variables.tf  - changed
     │   └── outputs.tf
     ├── db
-    │   ├── main.tf
-    │   ├── variables.tf
+    │   ├── main.tf - changed
+    │   ├── variables.tf - changed
     │   └── outputs.tf
     ├── web_server
-    │   ├── main.tf
-    │   ├── variables.tf
+    │   ├── main.tf  - changed
+    │   ├── variables.tf - changed
     │   └── outputs.tf
     ├── public_server
-    │   ├── main.tf
-    │   ├── variables.tf
+    │   ├── main.tf  - changed
+    │   ├── variables.tf  - changed
     │   └── outputs.tf
     ├── alb
     │   ├── main.tf
