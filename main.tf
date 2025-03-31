@@ -13,7 +13,7 @@ provider "aws" {
 }
 
 module "vpc" {
-  source             = "./vpc"
+  source             = "./modules/vpc"
   vpc_cidr           = var.vpc_cidr
   vpc_name           = var.vpc_name
   public_subnets     = var.public_subnets
@@ -25,14 +25,14 @@ module "vpc" {
 }
 
 module "nacl" {
-  source       = "./nacl"
+  source       = "./modules/nacl"
   vpc_id       = module.vpc.vpc_id
   allowed_cidr = var.allowed_cidr
   tags         = var.tags
 }
 
 module "security" {
-  source            = "./security"
+  source            = "./modules/security"
   vpc_id            = module.vpc.vpc_id
   name_prefix       = var.name_prefix
   web_ingress_rules = var.web_ingress_rules
@@ -43,52 +43,56 @@ module "security" {
 }
 
 module "app_server" {
-  source              = "./app_server"
+  source              = "./modules/app_server"
   app_instance_count  = var.app_instance_count
-  app_ami             = var.app_ami
-  app_instance_type   = var.app_instance_type
+  app_ami_list        = var.app_ami_list
+  app_instance_types  = var.app_instance_types
+  app_instance_names  = var.app_instance_names
+  app_sg_ids          = var.app_sg_ids
   private_subnet_ids  = module.vpc.private_subnet_ids
-  app_sg_id           = module.security.app_sg_id
   name_prefix         = var.name_prefix
   tags                = var.tags
 }
 
 module "db" {
-  source                 = "./db"
-  mysql_ami              = var.mysql_ami
-  mysql_instance_type    = var.mysql_instance_type
-  postgres_ami           = var.postgres_ami
-  postgres_instance_type = var.postgres_instance_type
-  private_subnet_ids     = module.vpc.private_subnet_ids
-  db_sg_id               = module.security.db_sg_id
+  source                   = "./modules/db"
+  mysql_ami                = var.mysql_ami
+  mysql_instance_type_list = var.mysql_instance_type_list
+  postgres_ami             = var.postgres_ami
+  postgres_instance_type   = var.postgres_instance_type
+  mysql_sg_ids             = var.mysql_sg_ids
+  postgres_sg_ids          = var.postgres_sg_ids
+  private_subnet_ids       = module.vpc.private_subnet_ids
+  name_prefix              = var.name_prefix
+  tags                     = var.tags
+}
+
+module "web_server" {
+  source              = "./modules/web_server"
+  web_instance_count  = var.web_instance_count
+  web_ami_list        = var.web_ami_list
+  web_instance_types  = var.web_instance_types
+  web_instance_names  = var.web_instance_names
+  web_sg_ids          = var.web_sg_ids
+  private_subnet_ids  = module.vpc.private_subnet_ids
+  name_prefix         = var.name_prefix
+  tags                = var.tags
+}
+
+module "public_server" {
+  source                 = "./modules/public_server"
+  public_instance_count  = var.public_instance_count
+  public_ami_list        = var.public_ami_list
+  public_instance_types  = var.public_instance_types
+  public_instance_names  = var.public_instance_names
+  public_sg_ids          = var.public_sg_ids
+  public_subnet_ids      = module.vpc.public_subnet_ids
   name_prefix            = var.name_prefix
   tags                   = var.tags
 }
 
-module "web_server" {
-  source             = "./web_server"
-  web_instance_count = var.web_instance_count
-  web_ami            = var.web_ami
-  web_instance_type  = var.web_instance_type
-  private_subnet_ids = module.vpc.private_subnet_ids
-  web_sg_id          = module.security.web_sg_id
-  name_prefix        = var.name_prefix
-  tags               = var.tags
-}
-
-module "public_server" {
-  source                = "./public_server"
-  public_instance_count = var.public_instance_count
-  public_ami            = var.public_ami
-  public_instance_type  = var.public_instance_type
-  public_subnet_ids     = module.vpc.public_subnet_ids
-  public_sg_id          = module.security.web_sg_id
-  name_prefix           = var.name_prefix
-  tags                  = var.tags
-}
-
 module "alb" {
-  source                = "./alb"
+  source                = "./modules/alb"
   name_prefix           = var.name_prefix
   public_subnet_ids     = module.vpc.public_subnet_ids
   vpc_id                = module.vpc.vpc_id
@@ -102,7 +106,7 @@ module "alb" {
 }
 
 module "efs" {
-  source             = "./efs"
+  source             = "./modules/efs"
   creation_token     = var.efs_creation_token
   private_subnet_ids = module.vpc.private_subnet_ids
   efs_sg_id          = module.security.efs_sg_id
@@ -111,7 +115,7 @@ module "efs" {
 }
 
 module "rds" {
-  source                  = "./rds"
+  source                  = "./modules/rds"
   environment             = var.environment
   name_prefix             = var.name_prefix
   mysql_engine_version    = var.mysql_engine_version
@@ -126,7 +130,7 @@ module "rds" {
 }
 
 module "backup" {
-  source                = "./backup"
+  source                = "./modules/backup"
   name_prefix           = var.name_prefix
   backup_schedule       = var.backup_schedule
   backup_retention_days = var.backup_retention_days
